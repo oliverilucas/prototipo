@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:prototipo/models/enums.dart';
+import './screens/despachos_screen.dart';
+import './models/enums.dart';
+import './screens/clientes_screen.dart';
+import './widgets/add_cliente.dart';
 import './screens/ordenes_produccion_screen.dart';
-import './screens/produccion_screen.dart';
 import './models/ordenCompra.dart';
 import './widgets/add_orden_compra.dart';
-
+import './models/despacho.dart';
 import './models/clientes.dart';
 import './models/contrato.dart';
 import 'package:intl/intl.dart';
 import './models/ordenProduccion.dart';
-import './screens/detallesOP.dart';
+import './screens/detallesOP_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -22,39 +24,43 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  List<OrdenProduccion> ordenesProduccion = [
-    OrdenProduccion(
-        id: 'OP21',
-        cantidad: 1000,
-        cliente: 'C1',
-        tipoProducto: 'pechera',
-        idOC: '14')
-  ];
+  List<OrdenProduccion> ordenesProduccion = [];
 
   var listaClientes = [
-    Clientes(direccion: 'Norte', id: 'C1', nombre: 'HTalca'),
-    Clientes(direccion: 'Centro', id: 'C2', nombre: 'HDHHA'),
-    Clientes(direccion: 'Centro', id: 'C3', nombre: 'HCurico'),
+    Clientes(
+        direccionCliente: 'Los Acacios 1997',
+        idCliente: 'C1',
+        nombreCliente: 'HTalca'),
+    Clientes(
+        direccionCliente: 'Av. Alvarez 1802',
+        idCliente: 'C2',
+        nombreCliente: 'HDHHA'),
+    Clientes(
+        direccionCliente: 'Calle Uno 2345',
+        idCliente: 'C3',
+        nombreCliente: 'HCurico'),
   ];
+
+  List<Despacho> despachosNoIngresados = [];
 
   var listaContratos = [
     Contrato(
-        cantidadEstimada: 10000,
-        duracion: 24,
-        fecha: DateFormat.yMMMd().format(DateTime.now()),
-        id: 'C1Co1',
-        idCliente: 'C1'),
+        cantidadEstimadaContrato: 10000,
+        duracionContrato: 24,
+        fechaInicioContrato: DateFormat.yMMMd().format(DateTime.now()),
+        idContrato: 'C1Co1',
+        idClienteContrato: 'C1'),
     Contrato(
-        cantidadEstimada: 5000,
-        duracion: 12,
-        fecha: DateFormat.yMMMd().format(DateTime.now()),
-        id: 'C2C01',
-        idCliente: 'C2'),
+        cantidadEstimadaContrato: 5000,
+        duracionContrato: 12,
+        fechaInicioContrato: DateFormat.yMMMd().format(DateTime.now()),
+        idContrato: 'C2C01',
+        idClienteContrato: 'C2'),
   ];
 
   void actualizar(List<Clientes> l1, List<Contrato> l2) {
-    l1[0].contratos.add(l2[0]);
-    l1[1].contratos.add(l2[1]);
+    l1[0].contratosCliente.add(l2[0]);
+    l1[1].contratosCliente.add(l2[1]);
   }
 
   void _addNewOC(
@@ -62,28 +68,30 @@ class _MyAppState extends State<MyApp> {
     String folio,
     String idCliente,
     String tipoProducto,
+    String nombreCliente,
   ) {
     var newOC = OrdenCompra(
-      cantidad: cantidad,
-      folio: folio,
-      idOC: DateTime.now().toString(),
-      idCliente: idCliente,
-      tipoProducto: tipoProducto,
+      cantidadOrdenCompra: cantidad,
+      folioOrdenCompra: folio,
+      idOrdenCompra: DateTime.now().toString(),
+      idClienteOrdenCompra: idCliente,
+      tipoProductoOrdenCompra: tipoProducto,
     );
     var newOP = OrdenProduccion(
-      id: DateTime.now().toString(),
-      cantidad: cantidad,
-      cliente: idCliente,
-      tipoProducto: tipoProducto,
-      idOC: newOC.idOC,
+      idOrdenProduccion: DateTime.now().toString(),
+      cantidadOrdenProduccion: cantidad,
+      tipoProductoOrdenProduccion: tipoProducto,
+      clienteOrdenProduccion: nombreCliente,
+      idOCOrdenProduccion: newOC.idOrdenCompra,
     );
-    newOP.estado = Estado.NoDespachada;
+    newOP.estadoOrdenProduccion = Estado.NoDespachada;
     newOC.ordenesProduccion.add(newOP);
+    newOC.estadoOrdenCompra = EstadoOrdenCompra.Activa;
 
     int index =
-        listaClientes.indexWhere((cliente) => (cliente.id == idCliente));
+        listaClientes.indexWhere((cliente) => (cliente.idCliente == idCliente));
 
-    listaClientes[index].ordenesCompraDirectas.add(newOC);
+    listaClientes[index].ordenesCompraDirectasCliente.add(newOC);
     setState(() {
       ordenesProduccion.add(newOP);
     });
@@ -91,21 +99,148 @@ class _MyAppState extends State<MyApp> {
 
   void _startAddOC(BuildContext ctx) {
     showModalBottomSheet(
-      context: ctx,
-      builder: (bCtx) {
-        return Container(
-          //esto no es necesario actualmente
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(25),
+          ),
+        ),
+        isScrollControlled: true,
+        context: ctx,
+        builder: (bCtx) {
+          return
+              //esto no es necesario actualmente
 
-          child: NewOC(_addNewOC, listaClientes),
-        );
-      },
+              NewOC(_addNewOC, listaClientes);
+        });
+  }
+
+  void _addNewClient(
+    String nombre,
+    String direccion,
+  ) {
+    var newClient = Clientes(
+      direccionCliente: direccion,
+      nombreCliente: nombre,
+      idCliente: DateTime.now().toString(),
     );
+
+    setState(() {
+      listaClientes.add(newClient);
+    });
+  }
+
+  void _startAddClient(BuildContext ctx) {
+    showModalBottomSheet(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(25),
+          ),
+        ),
+        isScrollControlled: true,
+        context: ctx,
+        builder: (bCtx) {
+          return
+              //esto no es necesario actualmente
+
+              AddClient(_addNewClient);
+        });
+  }
+
+  void addCajas(
+      OrdenProduccion ordenProd, int cantidadCajas, int cantidadUnidades) {
+    setState(() {
+      ordenProd.cantidadCajas += cantidadCajas;
+      ordenProd.cantidadUnidades =
+          ordenProd.cantidadUnidades + cantidadCajas * cantidadUnidades;
+    });
+  }
+
+  void despachar(OrdenProduccion ordenProduccion) {
+    if (ordenProduccion.cantidadOrdenProduccion !=
+        ordenProduccion.cantidadUnidades) {
+      Clientes clienteOrden = listaClientes.firstWhere((cliente) =>
+          ordenProduccion.clienteOrdenProduccion == cliente.nombreCliente);
+
+      OrdenCompra ordenCompra = clienteOrden.ordenesCompraDirectasCliente
+          .firstWhere((ordenCom) =>
+              ordenCom.idOrdenCompra == ordenProduccion.idOCOrdenProduccion);
+      print(ordenCompra.tipoProductoOrdenCompra);
+      setState(() {
+        ordenProduccion.estadoOrdenProduccion = Estado.Despachada;
+
+        var newOP = OrdenProduccion(
+          idOrdenProduccion: DateTime.now().toString(),
+          cantidadOrdenProduccion: ordenProduccion.cantidadOrdenProduccion -
+              ordenProduccion.cantidadUnidades,
+          tipoProductoOrdenProduccion:
+              ordenProduccion.tipoProductoOrdenProduccion,
+          clienteOrdenProduccion: ordenProduccion.clienteOrdenProduccion,
+          idOCOrdenProduccion: ordenProduccion.idOCOrdenProduccion,
+        );
+        newOP.estadoOrdenProduccion = Estado.NoDespachada;
+
+        ordenCompra.ordenesProduccion.add(newOP);
+        ordenesProduccion.add(newOP);
+        ordenesProduccion.remove(ordenProduccion);
+
+        var nuevoDespacho = Despacho(
+            cantidadDespacho: ordenProduccion.cantidadUnidades,
+            destinoDespacho: clienteOrden.direccionCliente,
+            fechaDespacho: DateFormat.yMd().format(DateTime.now()),
+            idOrdenProduccionDespacho: ordenProduccion.idOrdenProduccion,
+            nombreCliente: clienteOrden.nombreCliente);
+        nuevoDespacho.estadoDespacho = EstadoDespacho.NoIngresado;
+        ordenProduccion.despachos.add(nuevoDespacho);
+        despachosNoIngresados.add(nuevoDespacho);
+      });
+      return;
+    } else if (ordenProduccion.cantidadOrdenProduccion ==
+        ordenProduccion.cantidadUnidades) {
+      Clientes clienteOrden = listaClientes.firstWhere((cliente) =>
+          ordenProduccion.clienteOrdenProduccion == cliente.nombreCliente);
+
+      OrdenCompra ordenCompra = clienteOrden.ordenesCompraDirectasCliente
+          .firstWhere((ordenCom) =>
+              ordenCom.idOrdenCompra == ordenProduccion.idOCOrdenProduccion);
+      print(ordenCompra.tipoProductoOrdenCompra);
+      setState(() {
+        ordenProduccion.estadoOrdenProduccion = Estado.Despachada;
+        ordenCompra.estadoOrdenCompra = EstadoOrdenCompra.Completada;
+
+        ordenesProduccion.remove(ordenProduccion);
+
+        var nuevoDespacho = Despacho(
+            cantidadDespacho: ordenProduccion.cantidadUnidades,
+            destinoDespacho: clienteOrden.direccionCliente,
+            fechaDespacho: DateFormat.yMd().format(DateTime.now()),
+            idOrdenProduccionDespacho: ordenProduccion.idOrdenProduccion,
+            nombreCliente: clienteOrden.nombreCliente);
+        nuevoDespacho.estadoDespacho = EstadoDespacho.NoIngresado;
+        ordenProduccion.despachos.add(nuevoDespacho);
+        despachosNoIngresados.add(nuevoDespacho);
+      });
+      return;
+    }
+    return;
+  }
+
+  void removeOrdenProduccion(List<OrdenProduccion> listaOrdenesProduccion,
+      OrdenProduccion ordenProduccion) {
+    int index = listaOrdenesProduccion.indexWhere(
+        (item) => item.idOrdenProduccion == ordenProduccion.idOrdenProduccion);
+    int index2 = listaClientes.indexWhere(
+        (item) => item.nombreCliente == ordenProduccion.clienteOrdenProduccion);
+    int index3 = listaClientes[index2].ordenesCompraDirectasCliente.indexWhere(
+        (item) => item.idOrdenCompra == ordenProduccion.idOCOrdenProduccion);
+    setState(() {
+      ordenesProduccion.removeAt(index);
+      listaClientes[index2].ordenesCompraDirectasCliente.removeAt(index3);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     actualizar(listaClientes, listaContratos);
-    ordenesProduccion[0].estado = Estado.NoDespachada;
 
     return MaterialApp(
       title: 'Merida',
@@ -130,9 +265,14 @@ class _MyAppState extends State<MyApp> {
       ),
       initialRoute: '/',
       routes: {
-        '/': (ctx) => OrdenesProduccionScreen(ordenesProduccion, _startAddOC),
-        Despacho.routeName: (ctx) => Despacho(),
-        ProduccionScreen.routeName: (ctx) => ProduccionScreen(),
+        '/': (ctx) => OrdenesProduccionScreen(
+            ordenesProduccion, _startAddOC, removeOrdenProduccion),
+        DetallesOrdenProduccionScreen.routeName: (ctx) =>
+            DetallesOrdenProduccionScreen(addCajas, despachar),
+        ClientesScreen.routeName: (ctx) =>
+            ClientesScreen(listaClientes, _startAddClient),
+        DespachosScreen.routeName: (ctx) =>
+            DespachosScreen(despachosNoIngresados),
       },
     );
   }
